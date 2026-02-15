@@ -9,7 +9,7 @@ st.set_page_config(page_title="Sistema de Rifa", page_icon="🎟️", layout="wi
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 👇 AQUÍ ESTÁ LA CORRECCIÓN. Pega aquí el enlace de tu navegador, NO el correo de la cuenta de servicio.
-url_hoja = "https://docs.google.com/spreadsheets/d/https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0" 
+url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0" 
 
 # --- LEER DATOS GUARDADOS ---
 # Intentamos leer la pestaña Ventas
