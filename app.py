@@ -8,8 +8,8 @@ st.set_page_config(page_title="Sistema de Rifa", page_icon="🎟️", layout="wi
 # --- CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 👇 AQUÍ ESTÁ LA CORRECCIÓN. Pega aquí el enlace de tu navegador, NO el correo de la cuenta de servicio.
-url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0" 
+# AQUÍ YA ESTÁ TU ENLACE CORRECTO INTEGRADO
+url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0"
 
 # --- LEER DATOS GUARDADOS ---
 # Intentamos leer la pestaña Ventas
@@ -81,4 +81,68 @@ with col1:
                     st.rerun() # Refresca para pintar el cuadro rojo
         else:
             st.warning("¡Todos los números han sido vendidos!")
-            st.form_submit_button("Asignar Número",
+            # AQUÍ ESTÁ EL PARÉNTESIS CORREGIDO
+            st.form_submit_button("Asignar Número", disabled=True)
+
+with col2:
+    st.subheader("🔍 Buscador Inteligente")
+    busqueda = st.text_input("Ingresa un número o el nombre de una persona:")
+    
+    if busqueda:
+        if busqueda.isdigit():
+            num_buscado = int(busqueda)
+            if num_buscado in compradores:
+                dueño = compradores[num_buscado]
+                st.success(f"✅ El número **{num_buscado}** pertenece a: **{dueño}**")
+            elif num_buscado > total_numeros or num_buscado < 1:
+                st.error("⚠️ Ese número no existe en esta rifa.")
+            else:
+                st.info(f"🟢 El número **{num_buscado}** está libre y disponible para la venta.")
+        else:
+            busqueda_lower = busqueda.lower()
+            numeros_encontrados = [num for num, persona in compradores.items() if busqueda_lower in persona.lower()]
+            
+            if numeros_encontrados:
+                numeros_str = ", ".join(map(str, numeros_encontrados))
+                st.success(f"👤 **{busqueda.title()}** tiene los siguientes números: **{numeros_str}**")
+            else:
+                st.warning(f"No se encontraron números a nombre de '{busqueda}'.")
+
+# --- TABLERO VISUAL (Grid Dinámico) ---
+st.write("---")
+st.subheader("📊 Tablero de Disponibilidad")
+
+html_grid = """
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+        gap: 8px;
+        padding: 10px 0;
+    }
+    .box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 16px;
+        box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+    }
+    .disponible { background-color: #28a745; } /* Verde */
+    .ocupado { background-color: #dc3545; }    /* Rojo */
+</style>
+<div class="grid-container">
+"""
+
+for i in range(1, total_numeros + 1):
+    if i in compradores:
+        nombre_tooltip = compradores[i]
+        html_grid += f'<div class="box ocupado" title="Vendido a: {nombre_tooltip}">{i}</div>'
+    else:
+        html_grid += f'<div class="box disponible" title="Disponible">{i}</div>'
+
+html_grid += "</div>"
+st.markdown(html_grid, unsafe_allow_html=True)
