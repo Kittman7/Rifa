@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configuración principal de la página
-st.set_page_config(page_title="Sistema de Rifa", page_icon="🎟️", layout="wide")
+# 1. Configuración principal de la página y el icono de la pestaña
+st.set_page_config(page_title="Sistema de Rifa", page_icon="logo (2).jpg", layout="wide")
 
 # --- CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -35,6 +35,10 @@ if not df_ventas.empty and "Numero" in df_ventas.columns:
         compradores[int(row["Numero"])] = str(row["Nombre"]).title()
 
 # --- INTERFAZ VISUAL ---
+
+# Mostramos tu logo principal al inicio de la página
+st.image("logo (2).jpg", width=150) 
+
 st.title("🎟️ Sistema de Gestión de Rifas")
 
 # Barra Lateral: Configuración Permanente
@@ -118,13 +122,8 @@ with st.expander("🗑️ Corregir / Liberar un número vendido"):
             submit_borrar = st.form_submit_button("Liberar Número")
             
             if submit_borrar:
-                # Aseguramos que los números se traten como números
                 df_ventas['Numero'] = pd.to_numeric(df_ventas['Numero'], errors='coerce')
-                
-                # Filtramos la tabla: Nos quedamos con todos EXCEPTO el número que queremos borrar
                 df_ventas_actualizado = df_ventas[df_ventas['Numero'] != numero_a_borrar]
-                
-                # Guardamos la nueva tabla actualizada directamente
                 conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
                 
                 st.success(f"✅ El número {numero_a_borrar} ha sido eliminado y vuelve a estar libre.")
