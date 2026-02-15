@@ -7,7 +7,7 @@ st.set_page_config(page_title="Sistema de Rifa", page_icon="🎟️", layout="wi
 
 # --- CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
-url_hoja = "AQUI_LA_URL_DE_TU_HOJA" # <--- ¡REEMPLAZA ESTO CON TU ENLACE!
+url_hoja = "app-rifa@rifa-487521.iam.gserviceaccount.com" # <--- ¡REEMPLAZA ESTO CON TU ENLACE!
 
 # --- LEER DATOS GUARDADOS ---
 # Intentamos leer la pestaña Ventas
