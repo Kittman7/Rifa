@@ -118,16 +118,13 @@ with st.expander("🗑️ Corregir / Liberar un número vendido"):
             submit_borrar = st.form_submit_button("Liberar Número")
             
             if submit_borrar:
-                # Aseguramos que los números se traten como números para compararlos bien
+                # Aseguramos que los números se traten como números
                 df_ventas['Numero'] = pd.to_numeric(df_ventas['Numero'], errors='coerce')
                 
                 # Filtramos la tabla: Nos quedamos con todos EXCEPTO el número que queremos borrar
                 df_ventas_actualizado = df_ventas[df_ventas['Numero'] != numero_a_borrar]
                 
-                # Truco de Senior: Limpiamos la hoja entera primero para evitar "filas fantasma"
-                conn.client.open_by_url(url_hoja).worksheet("Ventas").clear()
-                
-                # Guardamos la nueva tabla actualizada
+                # Guardamos la nueva tabla actualizada directamente
                 conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
                 
                 st.success(f"✅ El número {numero_a_borrar} ha sido eliminado y vuelve a estar libre.")
