@@ -8,7 +8,7 @@ st.set_page_config(page_title="Sistema de Rifa", page_icon="🎟️", layout="wi
 # --- CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# AQUÍ YA ESTÁ TU ENLACE CORRECTO INTEGRADO
+# Tu enlace real de Google Sheets ya está configurado aquí:
 url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0"
 
 # --- LEER DATOS GUARDADOS ---
@@ -70,18 +70,15 @@ with col1:
                 if nombre.strip() == "":
                     st.error("⚠️ Debes ingresar un nombre.")
                 else:
-                    # 1. Agregamos el nuevo registro al DataFrame
                     nuevo_registro = pd.DataFrame([{"Numero": numero, "Nombre": nombre.strip().title()}])
                     df_ventas_actualizado = pd.concat([df_ventas, nuevo_registro], ignore_index=True)
                     
-                    # 2. GUARDAMOS EN GOOGLE SHEETS PARA SIEMPRE
                     conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
                     
                     st.success(f"¡Éxito! Número {numero} guardado permanentemente para {nombre.title()}.")
-                    st.rerun() # Refresca para pintar el cuadro rojo
+                    st.rerun()
         else:
             st.warning("¡Todos los números han sido vendidos!")
-            # AQUÍ ESTÁ EL PARÉNTESIS CORREGIDO
             st.form_submit_button("Asignar Número", disabled=True)
 
 with col2:
@@ -107,6 +104,36 @@ with col2:
                 st.success(f"👤 **{busqueda.title()}** tiene los siguientes números: **{numeros_str}**")
             else:
                 st.warning(f"No se encontraron números a nombre de '{busqueda}'.")
+
+# --- NUEVA ZONA: BORRAR / LIBERAR NÚMEROS ---
+st.write("---")
+with st.expander("🗑️ Corregir / Liberar un número vendido"):
+    st.write("Si te equivocaste al asignar un número, puedes borrarlo aquí para que vuelva a estar disponible (en color verde).")
+    
+    if compradores:
+        with st.form("borrar_form"):
+            numeros_ocupados = sorted(list(compradores.keys()))
+            numero_a_borrar = st.selectbox("Selecciona el número que deseas liberar:", numeros_ocupados)
+            
+            submit_borrar = st.form_submit_button("Liberar Número")
+            
+            if submit_borrar:
+                # Aseguramos que los números se traten como números para compararlos bien
+                df_ventas['Numero'] = pd.to_numeric(df_ventas['Numero'], errors='coerce')
+                
+                # Filtramos la tabla: Nos quedamos con todos EXCEPTO el número que queremos borrar
+                df_ventas_actualizado = df_ventas[df_ventas['Numero'] != numero_a_borrar]
+                
+                # Truco de Senior: Limpiamos la hoja entera primero para evitar "filas fantasma"
+                conn.client.open_by_url(url_hoja).worksheet("Ventas").clear()
+                
+                # Guardamos la nueva tabla actualizada
+                conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
+                
+                st.success(f"✅ El número {numero_a_borrar} ha sido eliminado y vuelve a estar libre.")
+                st.rerun()
+    else:
+        st.info("Aún no hay números vendidos que puedas borrar.")
 
 # --- TABLERO VISUAL (Grid Dinámico) ---
 st.write("---")
