@@ -12,13 +12,14 @@ st.markdown("""
 
     html, body, [class*="css"] { font-family: 'Rajdhani', sans-serif; }
 
-    /* Estilo para los títulos con mini-logo */
+    /* Estilo para los títulos de sección */
     .section-header {
         display: flex;
         align-items: center;
         gap: 12px;
         margin-bottom: 15px;
     }
+    /* Estilo del mini-logo (para la sección inferior) */
     .mini-logo {
         width: 35px;
         height: 35px;
@@ -142,14 +143,13 @@ st.title("RIFA TIENDAPUBG")
 
 col1, col2 = st.columns([1, 1])
 
-# Variable con el HTML del mini-logo para los títulos
+# Variable con el HTML del mini-logo (solo para la sección inferior ahora)
 mini_logo_html = f'<img src="{logo_url}" class="mini-logo">'
 
 with col1:
-    # SECCIÓN: REGISTRO DE JUGADOR
+    # SECCIÓN: REGISTRO DE JUGADOR (SIN LOGO)
     st.markdown(f'''
         <div class="section-header">
-            {mini_logo_html}
             <h3>REGISTRO DE JUGADOR</h3>
         </div>
     ''', unsafe_allow_html=True)
@@ -169,10 +169,9 @@ with col1:
                 st.rerun()
 
 with col2:
-    # SECCIÓN: BUSCADOR DE PARTICIPANTES
+    # SECCIÓN: BUSCADOR DE PARTICIPANTES (SIN LOGO)
     st.markdown(f'''
         <div class="section-header">
-            {mini_logo_html}
             <h3>BUSCADOR DE PARTICIPANTES</h3>
         </div>
     ''', unsafe_allow_html=True)
@@ -224,7 +223,7 @@ with col2:
 # --- 5. TABLERO VISUAL ---
 st.write("---")
 
-# SECCIÓN: NUMEROS DE RIFA
+# SECCIÓN: NUMEROS DE RIFA (CON LOGO, como pediste dejarlo)
 st.markdown(f'''
     <div class="section-header">
         {mini_logo_html}
