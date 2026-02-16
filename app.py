@@ -1,105 +1,82 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
-import random # Importamos random para elegir un ganador al azar si quisieras
 
-# --- CONFIGURACIÓN DE PÁGINA Y TEMA GAMER ---
-st.set_page_config(page_title="Rifa Cyberpunk", page_icon="logo (2).jpg", layout="wide")
+# --- 1. CONFIGURACIÓN DE PÁGINA ---
+# Se actualiza el título a RIFA TIENDAPUBG
+st.set_page_config(page_title="RIFA TIENDAPUBG", page_icon="logo (2).jpg", layout="wide")
 
-# INYECCIÓN DE CSS ESTILO RAZER/CYBERPUNK + ESTILO GANADOR
+# --- 2. ESTILOS CSS RAZER / CYBERPUNK ---
 st.markdown("""
 <style>
-    /* Importar fuente futurista de Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@900&display=swap');
 
-    /* Aplicar la fuente base a toda la app */
+    /* Fuente Base */
     html, body, [class*="css"] {
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* --- ESTILO DE TÍTULOS --- */
+    /* Títulos Neón Verde */
     h1, h2, h3 {
-        color: #39ff14 !important; /* Verde neón para títulos */
+        color: #39ff14 !important;
         text-transform: uppercase;
         letter-spacing: 2px;
         text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
     }
 
-    /* --- ESTILO DE INPUTS Y SELECTBOXES --- */
+    /* Inputs Estilo Gamer */
     .stTextInput > div > div > input, 
     .stSelectbox > div > div > div {
         background-color: #080808 !important;
         color: #39ff14 !important;
         border: 1px solid #1a1a1a !important;
-        border-radius: 4px;
-    }
-    .stTextInput > div > div > input:focus, 
-    .stSelectbox > div > div > div:focus-within {
-        border-color: #39ff14 !important;
-        box-shadow: 0 0 10px #39ff14 !important;
-    }
-    .stTextInput label, .stSelectbox label {
-        color: #ffffff !important;
-        font-weight: 600;
     }
 
-    /* --- ESTILO DE BOTONES (VERDE - REGISTRAR) --- */
-    /* Apuntamos específicamente al botón "primary" dentro del formulario */
-    div[data-testid="stForm"] button[kind="primary"] {
+    /* BOTÓN REGISTRAR (VERDE) */
+    div.stButton > button[kind="primary"] {
         background-color: transparent !important;
         border: 2px solid #39ff14 !important;
         color: #39ff14 !important;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
         box-shadow: 0 0 5px #39ff14;
-        width: 100%; /* Que ocupe todo su ancho disponible */
-    }
-    div[data-testid="stForm"] button[kind="primary"]:hover {
-        background-color: #39ff14 !important;
-        color: black !important;
-        box-shadow: 0 0 20px #39ff14, 0 0 40px #39ff14 !important;
-    }
-
-    /* --- NUEVO ESTILO: BOTÓN GANADOR (DORADO/AMARILLO) --- */
-    /* Truco CSS: Apuntamos al botón "secondary" dentro del formulario para hacerlo dorado */
-    div[data-testid="stForm"] button[kind="secondary"] {
-        background-color: transparent !important;
-        border: 2px solid #FFD700 !important; /* Dorado */
-        color: #FFD700 !important;
-        font-family: 'Orbitron', sans-serif; /* Fuente más impactante */
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 10px #FFD700;
         width: 100%;
     }
-    div[data-testid="stForm"] button[kind="secondary"]:hover {
-        background-color: #FFD700 !important;
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #39ff14 !important;
         color: black !important;
-        box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700 !important; /* Explosión dorada */
-        transform: scale(1.05); /* Crece un poco */
-    }
-    
-     /* --- Estilos generales de otros botones (borrar) --- */
-    div[data-testid="stExpander"] button {
-        background-color: #1a1a1a !important;
-        border: 1px solid #ff3939 !important;
-        color: #ff3939 !important;
-    }
-     div[data-testid="stExpander"] button:hover {
-        box-shadow: 0 0 15px #ff3939 !important;
+        box-shadow: 0 0 20px #39ff14;
     }
 
-    /* --- ESTILO DE LA BARRA LATERAL --- */
-    section[data-testid="stSidebar"] {
-        background-color: #121212 !important;
-        border-right: 1px solid #39ff14;
+    /* DISEÑO SENIOR: BOTÓN GANADOR (DORADO EXPLOSIVO) */
+    .detonador-container {
+        padding: 20px;
+        border: 1px dashed #FFD700;
+        border-radius: 10px;
+        background-color: rgba(255, 215, 0, 0.05);
+        text-align: center;
     }
     
-    /* --- ESTILO TEXTO GANADOR --- */
+    .win-btn > div > button {
+        background-color: transparent !important;
+        border: 2px solid #FFD700 !important;
+        color: #FFD700 !important;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        text-transform: uppercase;
+        box-shadow: 0 0 15px #FFD700;
+        width: 100% !important;
+        height: 70px;
+        font-size: 22px !important;
+    }
+    .win-btn > div > button:hover {
+        background-color: #FFD700 !important;
+        color: black !important;
+        box-shadow: 0 0 50px #FFD700 !important;
+        transform: scale(1.02);
+    }
+
+    /* Texto de Explosión de Victoria */
     .winner-text {
         font-family: 'Orbitron', sans-serif;
         font-size: 40px;
@@ -107,20 +84,21 @@ st.markdown("""
         text-align: center;
         color: #FFD700;
         text-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700;
-        animation: pulse 1.5s infinite alternate;
+        animation: pulse 0.8s infinite alternate;
+        padding-top: 15px;
     }
     @keyframes pulse {
-      from { text-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700; }
-      to { text-shadow: 0 0 40px #FFD700, 0 0 80px #FFD700; transform: scale(1.02); }
+      from { transform: scale(1); text-shadow: 0 0 20px #FFD700; }
+      to { transform: scale(1.08); text-shadow: 0 0 60px #FFD700; }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS) ---
+# --- 3. CONEXIÓN A DATOS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0"
 
-# --- LEER DATOS GUARDADOS ---
+# Lectura de Datos Segura
 try:
     df_ventas = conn.read(spreadsheet=url_hoja, worksheet="Ventas", ttl=0)
     df_ventas = df_ventas.dropna(how="all")
@@ -129,198 +107,74 @@ except Exception:
 
 try:
     df_config = conn.read(spreadsheet=url_hoja, worksheet="Config", ttl=0)
-    df_config = df_config.dropna(how="all")
     total_guardado = int(df_config.iloc[0]["Total"]) if not df_config.empty else 150
 except Exception:
     total_guardado = 150
 
-# --- PROCESAR LOS DATOS ---
-compradores = {}
-if not df_ventas.empty and "Numero" in df_ventas.columns:
-    for index, row in df_ventas.dropna(subset=["Numero", "Nombre"]).iterrows():
-        compradores[int(row["Numero"])] = str(row["Nombre"]).title()
+# Diccionario de Agentes
+compradores = {int(row["Numero"]): str(row["Nombre"]).title() for _, row in df_ventas.dropna().iterrows()} if not df_ventas.empty else {}
 
-# --- INTERFAZ VISUAL PRINCIPAL ---
-# Logo principal con un pequeño efecto de resplandor
+# --- 4. INTERFAZ PRINCIPAL ---
 st.markdown('<img src="https://raw.githubusercontent.com/Kittman7/Rifa/main/logo%20(2).jpg" width="150" style="border-radius: 10px; box-shadow: 0 0 15px #39ff14;">', unsafe_allow_html=True)
+st.title("🎟️ RIFA TIENDAPUBG")
 
-st.title("🎟️ Sistema de Gestión Cyberpunk")
-
-# Barra Lateral
-st.sidebar.header("⚙️ Configuración del Sistema")
-opciones_numeros = [100, 150, 200, 250]
-index_defecto = opciones_numeros.index(total_guardado) if total_guardado in opciones_numeros else 0
-nuevo_total = st.sidebar.selectbox("¿Capacidad del Servidor (Números)?", opciones_numeros, index=index_defecto)
-
+# Barra Lateral (Configuración)
+nuevo_total = st.sidebar.selectbox("¿Capacidad Máxima?", [100, 150, 200, 250], index=[100, 150, 200, 250].index(total_guardado) if total_guardado in [100, 150, 200, 250] else 1)
 if nuevo_total != total_guardado:
-    df_nueva_config = pd.DataFrame([{"Total": nuevo_total}])
-    conn.update(spreadsheet=url_hoja, worksheet="Config", data=df_nueva_config)
+    conn.update(spreadsheet=url_hoja, worksheet="Config", data=pd.DataFrame([{"Total": nuevo_total}]))
     st.rerun()
 
-total_numeros = nuevo_total
-
-# --- PANEL DE CONTROL ---
-col1, col2 = st.columns(2)
+# --- 5. COLUMNAS DE OPERACIÓN ---
+col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.subheader("📝 Operaciones de Agente")
-    # Usamos 'clear_on_submit=False' para poder manejar dos botones
-    with st.form("asignar_form", clear_on_submit=False):
+    st.subheader("📝 REGISTRO DE VENTA")
+    with st.form("registro_form"):
         nombre = st.text_input("ID / Nombre del Agente:")
-        disponibles = [n for n in range(1, total_numeros + 1) if n not in compradores]
+        disponibles = [n for n in range(1, nuevo_total + 1) if n not in compradores]
+        numero = st.selectbox("Slot Disponible:", disponibles) if disponibles else None
         
-        if disponibles:
-            numero = st.selectbox("Selecciona Slot Disponible:", disponibles)
-        else:
-             st.warning("SISTEMA LLENO. No hay slots disponibles.")
-             numero = None
-        
-        st.write("") # Espacio visual
-        
-        # --- AQUÍ ESTÁN LOS DOS BOTONES LADO A LADO ---
-        c_reg, c_win = st.columns(2)
-        
-        with c_reg:
-            # Botón Verde (Primary)
-            submit_registrar = st.form_submit_button("REGISTRAR EN MATRIZ", type="primary", disabled=not disponibles)
-            
-        with c_win:
-            # Botón Dorado (usamos 'secondary' pero el CSS lo vuelve dorado)
-            # Este botón solo se activa si hay gente participando
-            btn_ganador = st.form_submit_button("🏆 ¡DETONAR GANADOR!", type="secondary", disabled=len(compradores)==0)
-
-        # --- LÓGICA DE LOS BOTONES ---
-        if submit_registrar and disponibles and numero:
-            if nombre.strip() == "":
-                st.error("⚠️ ERROR: Se requiere identificación del agente.")
+        if st.form_submit_button("GUARDAR EN MATRIZ", type="primary"):
+            if nombre.strip() == "" or not numero:
+                st.error("⚠️ Datos incompletos.")
             else:
-                nuevo_registro = pd.DataFrame([{"Numero": numero, "Nombre": nombre.strip().title()}])
-                df_ventas_actualizado = pd.concat([df_ventas, nuevo_registro], ignore_index=True)
-                conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
-                st.success(f"¡REGISTRO EXITOSO! Slot {numero} asignado a {nombre.title()}.")
+                df_act = pd.concat([df_ventas, pd.DataFrame([{"Numero": numero, "Nombre": nombre.strip().title()}])], ignore_index=True)
+                conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_act)
                 st.rerun()
-
-        if btn_ganador and len(compradores) > 0:
-            # 1. Disparar animación de celebración (globos)
-            st.balloons()
-            
-            # 2. (Opcional) Elegir un ganador al azar de los que compraron
-            # numero_ganador = random.choice(list(compradores.keys()))
-            # nombre_ganador = compradores[numero_ganador]
-            
-            # 3. Mostrar mensaje gigante estilo Cyberpunk Dorado
-            st.markdown(f"""
-            <div style="margin-top: 20px;">
-                <p class="winner-text">🎉 ¡SECUENCIA DE VICTORIA INICIADA! 🎉</p>
-                <p style="text-align: center; color: #FFD700; font-size: 20px;">FELICITACIONES AL AGENTE GANADOR</p>
-            </div>
-            """, unsafe_allow_html=True)
-            # Si descomentas la parte 2, puedes mostrar quién ganó aquí:
-            # st.success(f"🏆 EL NÚMERO GANADOR ES: {numero_ganador} - ({nombre_ganador.upper()})")
-
 
 with col2:
-    st.subheader("🔍 Buscador de Datos")
+    # Se renombra a BUSCADOR DE PARTICIPANTES
+    st.subheader("🔍 BUSCADOR DE PARTICIPANTES")
     busqueda = st.text_input("Escanear por ID o Nombre:")
-    
     if busqueda:
-        if busqueda.isdigit():
-            num_buscado = int(busqueda)
-            if num_buscado in compradores:
-                dueño = compradores[num_buscado]
-                st.success(f"✅ Slot **{num_buscado}** pertenece al agente: **{dueño}**")
-            elif num_buscado > total_numeros or num_buscado < 1:
-                st.error("⚠️ ERROR: Slot fuera de rango del sistema.")
-            else:
-                st.info(f"🟢 Slot **{num_buscado}** está LIBRE y listo para asignación.")
+        if busqueda.isdigit() and int(busqueda) in compradores:
+            st.success(f"✅ Slot {busqueda}: {compradores[int(busqueda)]}")
+        elif not busqueda.isdigit():
+            encontrados = [f"{n}" for n, p in compradores.items() if busqueda.lower() in p.lower()]
+            if encontrados: st.success(f"👤 {busqueda.title()} tiene: {', '.join(encontrados)}")
+            else: st.warning("No encontrado.")
+    
+    st.write("") # Espacio
+    
+    # ZONA DEL DETONADOR (Diseño Senior)
+    st.markdown('<div class="detonador-container">', unsafe_allow_html=True)
+    st.write("✨ **ZONA DE PREMIACIÓN** ✨")
+    st.markdown('<div class="win-btn">', unsafe_allow_html=True)
+    # Se eliminan los globos, queda solo la explosión visual
+    detonar = st.button("🏆 ¡DETONAR GANADOR!", type="secondary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if detonar:
+        if compradores:
+            st.markdown('<p class="winner-text">💥 ¡VICTORIA CONFIRMADA! 💥</p>', unsafe_allow_html=True)
         else:
-            busqueda_lower = busqueda.lower()
-            numeros_encontrados = [num for num, persona in compradores.items() if busqueda_lower in persona.lower()]
-            
-            if numeros_encontrados:
-                numeros_str = ", ".join(map(str, numeros_encontrados))
-                st.success(f"👤 Agente **{busqueda.title()}** posee los slots: **{numeros_str}**")
-            else:
-                st.warning(f"No se encontraron datos para el agente '{busqueda}'.")
+            st.info("⚠️ No hay participantes registrados.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- ZONA DE BORRADO ---
+# --- 6. TABLERO VISUAL ---
 st.write("---")
-with st.expander("🗑️ Protocolo de Liberación de Slot"):
-    st.write("ATENCIÓN: Esta acción liberará el slot seleccionado y borrará los datos del agente asociado.")
-    if compradores:
-        with st.form("borrar_form"):
-            numeros_ocupados = sorted(list(compradores.keys()))
-            numero_a_borrar = st.selectbox("Selecciona Slot a purgar:", numeros_ocupados)
-            submit_borrar = st.form_submit_button("EJECUTAR PURGA")
-            if submit_borrar:
-                df_ventas['Numero'] = pd.to_numeric(df_ventas['Numero'], errors='coerce')
-                df_ventas_actualizado = df_ventas[df_ventas['Numero'] != numero_a_borrar]
-                conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_ventas_actualizado)
-                st.success(f"✅ Slot {numero_a_borrar} purgado del sistema. Ahora está disponible.")
-                st.rerun()
-    else:
-        st.info("No hay slots ocupados para purgar.")
-
-# --- TABLERO VISUAL (GRID GAMER) ---
-st.write("---")
-st.subheader("📊 Estado de la Matriz (Grid)")
-
-html_grid = """
-<style>
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 10px;
-        padding: 20px 0;
-    }
-    .box {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Rajdhani', sans-serif;
-        font-weight: 700;
-        font-size: 18px;
-        color: white;
-        padding: 15px 10px;
-        border-radius: 4px;
-        transition: all 0.3s ease;
-        cursor: default;
-        border: 1px solid transparent;
-    }
-    .disponible {
-        background-color: rgba(57, 255, 20, 0.1);
-        color: #39ff14;
-        border-color: #39ff14;
-        box-shadow: 0 0 5px #39ff14;
-    }
-    .disponible:hover {
-         background-color: #39ff14;
-         color: black;
-         box-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
-         transform: scale(1.05);
-    }
-    .ocupado {
-        background-color: rgba(255, 57, 57, 0.2);
-        color: #ff3939;
-        border-color: #ff3939;
-        box-shadow: 0 0 5px #ff3939;
-        text-shadow: 0 0 5px #ff3939;
-    }
-    .ocupado:hover {
-         background-color: #ff3939;
-         color: white;
-         box-shadow: 0 0 20px #ff3939, 0 0 40px #ff3939;
-    }
-</style>
-<div class="grid-container">
-"""
-
-for i in range(1, total_numeros + 1):
-    if i in compradores:
-        nombre_tooltip = compradores[i]
-        html_grid += f'<div class="box ocupado" title="🔴 Slot {i} asignado a: {nombre_tooltip}">{i}</div>'
-    else:
-        html_grid += f'<div class="box disponible" title="🟢 Slot {i} disponible">{i}</div>'
-
-html_grid += "</div>"
-st.markdown(html_grid, unsafe_allow_html=True)
+st.subheader("📊 ESTADO DE LA MATRIZ (GRID)")
+grid_html = '<style>.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:10px;}.box{display:flex;align-items:center;justify-content:center;font-weight:700;padding:15px;border-radius:4px;border:1px solid;}.dispo{background:rgba(57,255,20,0.1);color:#39ff14;border-color:#39ff14;box-shadow:0 0 5px #39ff14;}.ocu{background:rgba(255,57,57,0.2);color:#ff3939;border-color:#ff3939;text-shadow: 0 0 5px #ff3939;}</style><div class="grid">'
+for i in range(1, nuevo_total + 1):
+    grid_html += f'<div class="box {"ocu" if i in compradores else "dispo"}">{i}</div>'
+st.markdown(grid_html + '</div>', unsafe_allow_html=True)
