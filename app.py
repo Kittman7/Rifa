@@ -5,7 +5,7 @@ from streamlit_gsheets import GSheetsConnection
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="RIFA TIENDAPUBG", page_icon="logo (2).jpg", layout="wide")
 
-# --- 2. ESTILOS CSS RAZER / CYBERPUNK ---
+# --- 2. ESTILOS CSS RAZER / CYBERPUNK + NUEVA ANIMACIÓN DE EXPLOSIÓN ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@900&display=swap');
@@ -49,6 +49,9 @@ st.markdown("""
         background-color: rgba(255, 215, 0, 0.05);
         text-align: center;
         min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     
     .win-btn > div > button {
@@ -69,19 +72,38 @@ st.markdown("""
         box-shadow: 0 0 50px #FFD700 !important;
     }
 
-    /* TEXTO DE EXPLOSIÓN DE VICTORIA */
-    .winner-text {
+    /* NUEVA ANIMACIÓN: EXPLOSIÓN DE ENTRADA PROFESIONAL */
+    @keyframes explode-enter {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+            text-shadow: 0 0 0px #FFD700;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+            text-shadow: 0 0 50px #FFD700, 0 0 100px #FFD700; /* Destello intenso */
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+            text-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700;
+        }
+    }
+
+    @keyframes pulse-steady {
+      from { transform: scale(1); text-shadow: 0 0 20px #FFD700; }
+      to { transform: scale(1.05); text-shadow: 0 0 40px #FFD700; }
+    }
+
+    .winner-text-explosion {
         font-family: 'Orbitron', sans-serif;
-        font-size: 38px;
+        font-size: 42px; /* Un poco más grande */
         color: #FFD700;
-        text-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700;
-        animation: pulse 0.8s infinite alternate;
         text-align: center;
         margin: 10px 0;
-    }
-    @keyframes pulse {
-      from { transform: scale(1); text-shadow: 0 0 20px #FFD700; }
-      to { transform: scale(1.08); text-shadow: 0 0 50px #FFD700; }
+        /* Combina la entrada explosiva con el pulso constante */
+        animation: explode-enter 1s ease-out forwards, pulse-steady 1s infinite alternate 1s;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -114,7 +136,6 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("📝 REGISTRO DE VENTA")
-    # clear_on_submit=True para limpiar el nombre automáticamente
     with st.form("registro_form", clear_on_submit=True):
         nombre = st.text_input("ID / Nombre del Agente:")
         disponibles = [n for n in range(1, total_guardado + 1) if n not in compradores]
@@ -133,23 +154,38 @@ with col2:
     st.subheader("🔍 BUSCADOR DE PARTICIPANTES")
     
     # Variables de control para el detonador
-    buscado_actual = None
-    slot_actual = None
+    buscado_nombre = None
+    buscado_numeros = []
     
     busqueda = st.text_input("Escanear por ID o Nombre:")
     
     if busqueda:
-        # Buscar por Número
-        if busqueda.isdigit() and int(busqueda) in compradores:
-            slot_actual = int(busqueda)
-            buscado_actual = compradores[slot_actual]
-            st.success(f"✅ Slot {slot_actual}: {buscado_actual}")
-        # Buscar por Nombre
-        elif not busqueda.isdigit():
-            encontrados = [(n, p) for n, p in compradores.items() if busqueda.lower() in p.lower()]
-            if encontrados:
-                slot_actual, buscado_actual = encontrados[0]
-                st.success(f"👤 {buscado_actual} detectado en el Slot: {slot_actual}")
+        # Lógica de búsqueda mejorada
+        nombre_encontrado = None
+        
+        # 1. Intentar buscar por Número (ID)
+        if busqueda.isdigit():
+            slot_buscado = int(busqueda)
+            if slot_buscado in compradores:
+                nombre_encontrado = compradores[slot_buscado]
+        
+        # 2. Si no se encontró por número, intentar por Nombre
+        if not nombre_encontrado:
+             for numero, nombre in compradores.items():
+                 if busqueda.lower() in nombre.lower():
+                     nombre_encontrado = nombre
+                     break # Encontramos una coincidencia
+        
+        # 3. Si encontramos a alguien, buscar TODOS sus números
+        if nombre_encontrado:
+            buscado_nombre = nombre_encontrado
+            buscado_numeros = [str(num) for num, nombre in compradores.items() if nombre == nombre_encontrado]
+            numeros_str = ", ".join(buscado_numeros)
+            
+            # Mensaje completo como lo pediste
+            st.success(f"✅ **{buscado_nombre}** tiene los siguientes números: **{numeros_str}**")
+        else:
+            st.warning("⚠️ No se encontró ningún participante con ese ID o Nombre.")
 
     st.write("")
     # ZONA DE PREMIACIÓN (VINCULADA AL BUSCADOR)
@@ -160,19 +196,23 @@ with col2:
     detonar = st.button("🏆 ¡DETONAR GANADOR!", type="secondary", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Lógica de detonación directa (sin azar)
+    # Lógica de detonación directa con EFECTOS
     if detonar:
-        if buscado_actual:
-            st.session_state['ganador_v1'] = f"💥 {buscado_actual.upper()} 💥"
-            st.session_state['slot_v1'] = f"GANADOR DEL SLOT: {slot_actual}"
+        if buscado_nombre:
+            # Guardamos el ganador y sus números para la animación
+            st.session_state['ganador_final'] = f"💥 {buscado_nombre.upper()} 💥"
+            st.session_state['numeros_final'] = f"NÚMEROS GANADORES: {', '.join(buscado_numeros)}"
+            # ¡Efecto de celebración con globos!
+            st.balloons()
         else:
-            st.warning("⚠️ Primero busca a un participante arriba.")
+            st.warning("⚠️ Primero busca a un participante válido arriba.")
 
-    # Mostrar la explosión de victoria
-    if 'ganador_v1' in st.session_state:
-        st.markdown(f'<p class="winner-text">{st.session_state["ganador_v1"]}</p>', unsafe_allow_html=True)
-        if st.session_state['slot_v1']:
-            st.markdown(f'<p style="color:#FFD700; font-weight:bold; font-size:20px;">{st.session_state["slot_v1"]}</p>', unsafe_allow_html=True)
+    # Mostrar la explosión de victoria profesional
+    if 'ganador_final' in st.session_state:
+        # Usamos la nueva clase CSS para la animación de entrada explosiva
+        st.markdown(f'<p class="winner-text-explosion">{st.session_state["ganador_final"]}</p>', unsafe_allow_html=True)
+        if st.session_state['numeros_final']:
+            st.markdown(f'<p style="color:#FFD700; font-weight:bold; font-size:20px; text-align:center;">{st.session_state["numeros_final"]}</p>', unsafe_allow_html=True)
             
     st.markdown('</div>', unsafe_allow_html=True)
 
