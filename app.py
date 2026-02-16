@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
-import random # Motor de azar para el ganador
 
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="RIFA TIENDAPUBG", page_icon="logo (2).jpg", layout="wide")
@@ -26,12 +25,13 @@ st.markdown("""
         border: 1px solid #1a1a1a !important;
     }
 
-    /* BOTÓN REGISTRAR */
+    /* BOTÓN REGISTRAR (VERDE) */
     div.stButton > button[kind="primary"] {
         background-color: transparent !important;
         border: 2px solid #39ff14 !important;
         color: #39ff14 !important;
         font-weight: 700;
+        text-transform: uppercase;
         box-shadow: 0 0 5px #39ff14;
         width: 100%;
     }
@@ -41,7 +41,7 @@ st.markdown("""
         box-shadow: 0 0 20px #39ff14;
     }
 
-    /* ZONA DEL DETONADOR */
+    /* ZONA DEL DETONADOR (DORADO) */
     .detonador-container {
         padding: 20px;
         border: 1px dashed #FFD700;
@@ -57,6 +57,7 @@ st.markdown("""
         color: #FFD700 !important;
         font-family: 'Orbitron', sans-serif;
         font-weight: 900;
+        text-transform: uppercase;
         box-shadow: 0 0 15px #FFD700;
         width: 100% !important;
         height: 60px;
@@ -85,11 +86,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CONEXIÓN A DATOS ---
+# --- 3. CONEXIÓN A DATOS (GOOGLE SHEETS) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 url_hoja = "https://docs.google.com/spreadsheets/d/1YcjxsimcbJewI53VVu9exeJxQGmLCP8FkJpFA5OP5cQ/edit?gid=0#gid=0"
 
-# Lectura forzada (ttl=0 para evitar caché)
+# Lectura sin caché (ttl=0) para sincronización total
 try:
     df_ventas = conn.read(spreadsheet=url_hoja, worksheet="Ventas", ttl=0)
     df_ventas = df_ventas.dropna(how="all")
@@ -102,6 +103,7 @@ try:
 except:
     total_guardado = 150
 
+# Mapeo de slots
 compradores = {int(row["Numero"]): str(row["Nombre"]).title() for _, row in df_ventas.dropna().iterrows()} if not df_ventas.empty else {}
 
 # --- 4. INTERFAZ ---
@@ -112,6 +114,7 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("📝 REGISTRO DE VENTA")
+    # clear_on_submit=True para limpiar el nombre automáticamente
     with st.form("registro_form", clear_on_submit=True):
         nombre = st.text_input("ID / Nombre del Agente:")
         disponibles = [n for n in range(1, total_guardado + 1) if n not in compradores]
@@ -124,21 +127,32 @@ with col1:
                 nuevo_dato = pd.DataFrame([{"Numero": numero, "Nombre": nombre.strip().title()}])
                 df_act = pd.concat([df_ventas, nuevo_dato], ignore_index=True)
                 conn.update(spreadsheet=url_hoja, worksheet="Ventas", data=df_act)
-                st.success(f"Slot {numero} sincronizado.")
                 st.rerun()
 
 with col2:
     st.subheader("🔍 BUSCADOR DE PARTICIPANTES")
+    
+    # Variables de control para el detonador
+    buscado_actual = None
+    slot_actual = None
+    
     busqueda = st.text_input("Escanear por ID o Nombre:")
+    
     if busqueda:
+        # Buscar por Número
         if busqueda.isdigit() and int(busqueda) in compradores:
-            st.success(f"✅ Slot {busqueda}: {compradores[int(busqueda)]}")
+            slot_actual = int(busqueda)
+            buscado_actual = compradores[slot_actual]
+            st.success(f"✅ Slot {slot_actual}: {buscado_actual}")
+        # Buscar por Nombre
         elif not busqueda.isdigit():
-            encontrados = [f"{n}" for n, p in compradores.items() if busqueda.lower() in p.lower()]
-            if encontrados: st.success(f"👤 {busqueda.title()} tiene: {', '.join(encontrados)}")
+            encontrados = [(n, p) for n, p in compradores.items() if busqueda.lower() in p.lower()]
+            if encontrados:
+                slot_actual, buscado_actual = encontrados[0]
+                st.success(f"👤 {buscado_actual} detectado en el Slot: {slot_actual}")
 
     st.write("")
-    # ZONA DE PREMIACIÓN (DETONADOR)
+    # ZONA DE PREMIACIÓN (VINCULADA AL BUSCADOR)
     st.markdown('<div class="detonador-container">', unsafe_allow_html=True)
     st.write("✨ **ZONA DE PREMIACIÓN** ✨")
     
@@ -146,24 +160,19 @@ with col2:
     detonar = st.button("🏆 ¡DETONAR GANADOR!", type="secondary", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # LÓGICA DE DETONACIÓN AUTOMÁTICA
+    # Lógica de detonación directa (sin azar)
     if detonar:
-        if compradores:
-            # Selecciona un número ganador al azar de los vendidos
-            num_ganador = random.choice(list(compradores.keys()))
-            nombre_ganador = compradores[num_ganador]
-            # Guardamos en la memoria de la sesión
-            st.session_state['ganador_actual'] = f"💥 {nombre_ganador.upper()} 💥"
-            st.session_state['slot_actual'] = f"GANADOR DEL SLOT: {num_ganador}"
+        if buscado_actual:
+            st.session_state['ganador_v1'] = f"💥 {buscado_actual.upper()} 💥"
+            st.session_state['slot_v1'] = f"GANADOR DEL SLOT: {slot_actual}"
         else:
-            st.session_state['ganador_actual'] = "SIN PARTICIPANTES"
-            st.session_state['slot_actual'] = ""
+            st.warning("⚠️ Primero busca a un participante arriba.")
 
-    # Mostrar ganador si existe en memoria
-    if 'ganador_actual' in st.session_state:
-        st.markdown(f'<p class="winner-text">{st.session_state["ganador_actual"]}</p>', unsafe_allow_html=True)
-        if st.session_state['slot_actual']:
-            st.markdown(f'<p style="color:#FFD700; font-weight:bold; font-size:20px;">{st.session_state["slot_actual"]}</p>', unsafe_allow_html=True)
+    # Mostrar la explosión de victoria
+    if 'ganador_v1' in st.session_state:
+        st.markdown(f'<p class="winner-text">{st.session_state["ganador_v1"]}</p>', unsafe_allow_html=True)
+        if st.session_state['slot_v1']:
+            st.markdown(f'<p style="color:#FFD700; font-weight:bold; font-size:20px;">{st.session_state["slot_v1"]}</p>', unsafe_allow_html=True)
             
     st.markdown('</div>', unsafe_allow_html=True)
 
